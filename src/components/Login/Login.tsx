@@ -1,13 +1,34 @@
 /* eslint-disable max-len */
-import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
-// import { Link } from 'react-router-dom';
+import React, { Dispatch, SetStateAction, useState } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { UserType } from '../../types/UserType';
+import { loginUser } from '../fetchAPI/fetch';
 
-export const Login: React.FC = () => {
+interface Props {
+  setCurrentUser: Dispatch<SetStateAction<UserType | null>>;
+}
+
+export const Login: React.FC<Props> = ({ setCurrentUser }) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
+
+  const navigate = useNavigate();
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      const { user, activationToken } = await loginUser(email, password);
+
+      localStorage.setItem('activationToken', activationToken);
+      setCurrentUser(user);
+      navigate('/chat');
+    } catch (err) {}
   };
 
   return (
@@ -17,12 +38,14 @@ export const Login: React.FC = () => {
         <p className="text-center text-gray-600 mb-8">
           Login to access your account
         </p>
-        <form>
+        <form onSubmit={handleLogin}>
           <div className="mb-4">
             <input
               type="email"
               placeholder="Email"
               className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
             />
           </div>
           <div className="mb-4 relative">
@@ -30,6 +53,8 @@ export const Login: React.FC = () => {
               type={showPassword ? 'text' : 'password'}
               placeholder="Password"
               className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
             />
             <button
               type="button"
@@ -48,16 +73,16 @@ export const Login: React.FC = () => {
               Forgot Password
             </NavLink>
           </div>
-          <NavLink to={'/chat'}>
-            <button className="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition duration-200">
-              Login
-            </button>
-          </NavLink>
-
+          <button
+            type="submit"
+            className="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition duration-200"
+          >
+            Login
+          </button>
           <div className="text-center mt-4">
             <p className="text-gray-600">
               Don&apos;t have an account?{' '}
-              <NavLink to="/sing-up" className="text-blue-500">
+              <NavLink to="/sign-up" className="text-blue-500">
                 Sign up
               </NavLink>
             </p>

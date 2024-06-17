@@ -12,24 +12,6 @@ export function getAllMesages(): Promise<Message[]> {
   return axios.get('/messages').then((res: { data: Message[] }) => res.data);
 }
 
-// export async function updateAll(items: Todo[]): Promise<Todo[]> {
-//   const response = await axios.patch('/todos', {
-//     action: 'update',
-//     items,
-//   });
-
-//   return response.data;
-// }
-
-// export function removeAll(items: Todo[]): Promise<Todo[]> {
-//   return axios
-//     .patch('/todos?action=delete', {
-//       ids: items.map(item => item.id),
-//       action: 'delete',
-//     })
-//     .then((res: { data: any }) => res.data);
-// }
-
 export async function getOneUser(userId: string): Promise<UserType[]> {
   const response = await axios.get(`/users/${userId}`);
 
@@ -69,7 +51,7 @@ export async function addNewUser(newUser: {
 
 export async function addNewMessage(newMessage: {
   messageId: string;
-  user: UserType;
+  userId: string;
   text: string;
   timestamp: number;
 }): Promise<Message> {
@@ -89,6 +71,24 @@ export async function updateUser(user: UserType): Promise<UserType> {
 
   return response.data;
 }
+
+export const loginUser = async (email: string, password: string) => {
+  const response = await fetch('http://localhost:3005/login', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Login failed');
+  }
+
+  const data = await response.json();
+
+  return data;
+};
 
 export async function updateMessage(message: Message): Promise<Message> {
   const { messageId, text, timestamp } = message;

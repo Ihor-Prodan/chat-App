@@ -1,9 +1,10 @@
 /* eslint-disable max-len */
-import React, { Dispatch, SetStateAction, useState } from 'react';
+import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import defaultAvatar from './img/Avatar-Profile-No-Background.png';
 import { UserType } from '../../types/UserType';
 import { useNavigate } from 'react-router';
 import { v4 as uuidv4 } from 'uuid';
+import { addNewUser, getAllUsers } from '../fetchAPI/fetch';
 
 interface Props {
   setUsers: Dispatch<SetStateAction<UserType[]>>;
@@ -22,6 +23,18 @@ export const SignUp: React.FC<Props> = ({ setUsers }) => {
   const [error, setError] = useState(false);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const users = await getAllUsers();
+
+        setUsers(users);
+      } catch (eror) {}
+    };
+
+    fetchUsers();
+  }, []);
+
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
@@ -30,7 +43,7 @@ export const SignUp: React.FC<Props> = ({ setUsers }) => {
     setShowConfirmPassword(!showConfirmPassword);
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
     if (password !== confirmPassword) {
@@ -39,14 +52,10 @@ export const SignUp: React.FC<Props> = ({ setUsers }) => {
       return;
     }
 
-    if (firstName.trim() === '') {
-      setError(true);
-    }
-
     const validValues =
       firstName && lastName && password && phoneNumber && email;
 
-    if (!validValues || validValues.trim() === '') {
+    if (!validValues) {
       setError(true);
 
       return;
@@ -67,17 +76,25 @@ export const SignUp: React.FC<Props> = ({ setUsers }) => {
       updatedAt: new Date(),
     };
 
-    setUsers(prevUsers => [...prevUsers, user]);
+    try {
+      const addedUser = await addNewUser(user);
 
-    setFirstName('');
-    setLastName('');
-    setPassword('');
-    setConfirmPassword('');
-    setEmail('');
-    setPhoneNumber('');
-    setTermsAccepted(false);
+      setUsers(prevUsers => [...prevUsers, addedUser]);
 
-    navigate('/chat');
+      // setFirstName('');
+      // setLastName('');
+      // setPassword('');
+      // setConfirmPassword('');
+      // setEmail('');
+      // setPhoneNumber('');
+      setTermsAccepted(false);
+
+      navigate('/chat');
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to create user', err);
+      alert('Failed to create user');
+    }
   };
 
   return (
@@ -90,6 +107,7 @@ export const SignUp: React.FC<Props> = ({ setUsers }) => {
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <input
+              required
               type="text"
               placeholder="First Name"
               value={firstName}

@@ -4,26 +4,56 @@
 import React from 'react';
 import { UserType } from '../../types/UserType';
 import { Message } from '../../types/MessageTypes';
+import { ChatType } from '../../types/ChatType';
 
 interface UserProps {
   users: UserType[];
-  messages: Message[];
+  currentUser: UserType | null;
+  chat: ChatType;
 }
 
-export const Messages: React.FC<UserProps> = ({ users, messages }) => {
+export const Messages: React.FC<UserProps> = ({ users, currentUser, chat }) => {
   const maxMessageLength = 35;
+
+  const userMessages = chat.messages.reduce(
+    (acc, message) => {
+      if (message.userId && message.userId !== currentUser?.id) {
+        if (!acc[message.userId]) {
+          // eslint-disable-next-line no-param-reassign
+          acc[message.userId] = [];
+        }
+
+        acc[message.userId].push(message);
+      }
+
+      return acc;
+    },
+    {} as Record<string, Message[]>,
+  );
+
+  const userMessageList = Object.keys(userMessages).map(userId => {
+    const user = users.find(u => u.id === userId);
+    const userMessagesArray = userMessages[userId];
+    const lastMessage = userMessagesArray[userMessagesArray.length - 1].text;
+
+    return {
+      user,
+      lastMessage,
+      timestamp: userMessagesArray[userMessagesArray.length - 1].timestamp,
+    };
+  });
 
   return (
     <section className="w-1/4 p-4 bg-gray-100">
-      {users.length > 0 && (
+      {currentUser && (
         <div className="flex items-center p-2">
           <img
-            src={users[0].avatar}
+            src={currentUser.avatar}
             alt="user"
             className="w-12 h-12 rounded-full"
           />
           <div className="ml-2">
-            <h2 className="text-lg font-bold">{`${users[0].firstName} ${users[0].lastName}`}</h2>
+            <h2 className="text-lg font-bold">{currentUser.fullName}</h2>
           </div>
         </div>
       )}
@@ -49,16 +79,15 @@ export const Messages: React.FC<UserProps> = ({ users, messages }) => {
         />
       </div>
       <ul>
-        {messages.map((contact, ind) => {
+        {userMessageList.map((contact, ind) => {
           if (!contact.user) {
             return null;
           }
 
-          const firstMessage = contact.text || '';
           const truncatedMessage =
-            firstMessage.length > maxMessageLength
-              ? `${firstMessage.substring(0, maxMessageLength)}...`
-              : firstMessage;
+            contact.lastMessage.length > maxMessageLength
+              ? `${contact.lastMessage.substring(0, maxMessageLength)}...`
+              : contact.lastMessage;
 
           return (
             <li
@@ -86,10 +115,10 @@ export const Messages: React.FC<UserProps> = ({ users, messages }) => {
                     </div>
                   </div>
                   <div className="w-6">
-                    {contact.text.length > 0 && (
+                    {userMessages[contact.user.id].length > 0 && (
                       <div className="h-4 w-4 bg-sky-400 rounded-full flex items-center justify-center ml-2 absolute right-0 bottom-0">
                         <p className="text-xs text-white">
-                          {contact.text.length}
+                          {userMessages[contact.user.id].length}
                         </p>
                       </div>
                     )}

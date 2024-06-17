@@ -1,99 +1,128 @@
+/* eslint-disable no-console */
+/* eslint-disable max-len */
+/* eslint-disable max-len */
+/* eslint-disable no-console */
 /* eslint-disable max-len */
 import React, { useState, FormEvent, Dispatch, SetStateAction } from 'react';
 import { UserType } from '../../types/UserType';
 import { Message } from '../../types/MessageTypes';
-
-// interface Message {
-//   user: UserType;
-//   text: string;
-//   timestamp: number;
-// }
+import { ChatType } from '../../types/ChatType';
+import { addNewMessage } from '../fetchAPI/fetch';
+import { v4 as uuidv4 } from 'uuid';
 
 interface Props {
   users: UserType[];
   setMessages: Dispatch<SetStateAction<Message[]>>;
-  messages: Message[];
+  sendMessage: (message: Message) => void;
+  setChat: Dispatch<React.SetStateAction<ChatType>>;
+  chat: ChatType;
+  currentUser: UserType;
+  selectedUser: UserType | null;
 }
 
-const Chat: React.FC<Props> = ({ users, setMessages, messages }) => {
-  // const [messages, setMessages] = useState<Message[]>([]);
+const Chat: React.FC<Props> = ({
+  setMessages,
+  sendMessage,
+  chat,
+  setChat,
+  currentUser,
+  selectedUser,
+}) => {
   const [message, setMessage] = useState<string>('');
-  const userOne = users[4];
-  const currentUser = userOne;
 
-  const sendMessage = (e: FormEvent<HTMLFormElement>) => {
+  const handleSendMessage = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (message.trim()) {
+
+    if (message.trim() && selectedUser) {
       const newMessage: Message = {
-        user: currentUser,
+        messageId: uuidv4(),
+        userId: currentUser.id,
         text: message,
         timestamp: Date.now(),
-        messageId: currentUser.id,
       };
 
-      setMessages(prevMessages => [newMessage, ...prevMessages]);
-      setMessage('');
+      try {
+        const savedMessage = await addNewMessage(newMessage);
+
+        setMessages(prevMessages => [savedMessage, ...prevMessages]);
+        sendMessage(savedMessage);
+        setMessage('');
+
+        setChat(prevChat => ({
+          ...prevChat,
+          messages: [savedMessage, ...prevChat.messages],
+        }));
+      } catch (error) {
+        console.error('Error sending message:', error);
+      }
     }
   };
 
   return (
     <div className="w-2/4 p-4 bg-white flex flex-col h-screen">
-      <div className="flex items-center p-2 mb-4 border-b">
-        <img
-          src={currentUser.avatar}
-          alt="Chat Avatar"
-          className="w-12 h-12 rounded-full"
-        />
-        <div className="ml-2">
-          <h2 className="text-lg font-bold">{currentUser.fullName}</h2>
-          {currentUser.status && (
+      {selectedUser && (
+        <div className="flex items-center p-2 mb-4 border-b">
+          <img
+            src={selectedUser.avatar}
+            alt="Chat Avatar"
+            className="w-12 h-12 rounded-full"
+          />
+          <div className="ml-2">
+            <h2 className="text-lg font-bold">{selectedUser.fullName}</h2>
             <p className="text-sm text-green-500">Online</p>
-          )}
+          </div>
         </div>
-      </div>
+      )}
+
       <ul className="h-96 overflow-y-auto mb-4 flex-grow flex flex-col-reverse">
-        {messages.map((msg, index) => (
-          <li
-            key={index}
-            className={`flex mb-2 items-center ${
-              msg.messageId === currentUser.id ? 'justify-end' : 'justify-start'
-            }`}
-          >
-            {msg.messageId !== currentUser.id && (
-              <img
-                src={msg.user?.avatar}
-                alt={`${msg.user?.fullName}'s avatar`}
-                className="w-8 h-8 rounded-full mr-2"
-              />
-            )}
-            <div
-              className={`p-2 rounded-lg max-w-xs ${
-                msg.messageId === currentUser.id
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 text-black'
+        {chat.messages.map((msg, index) => {
+          const messageUser =
+            msg.userId === currentUser.id ? currentUser : selectedUser;
+
+          return (
+            <li
+              key={index}
+              className={`flex mb-2 items-center ${
+                msg.userId === currentUser.id ? 'justify-end' : 'justify-start'
               }`}
             >
-              {msg.text}
+              {msg.userId !== currentUser.id && messageUser && (
+                <img
+                  src={messageUser.avatar}
+                  alt={`${messageUser.fullName}'s avatar`}
+                  className="w-8 h-8 rounded-full mr-2"
+                />
+              )}
               <div
-                className={
-                  msg.messageId === currentUser.id
-                    ? 'text-xs text-right text-wrap text-white'
-                    : 'text-xs text-right text-wrap text-gray-500'
-                }
+                className={`p-2 rounded-lg max-w-xs ${
+                  msg.userId === currentUser.id
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-200 text-black'
+                }`}
               >
-                {new Date(msg.timestamp).toLocaleTimeString().slice(0, 5)}
+                {msg.text}
+                <div
+                  className={`text-xs text-right text-wrap ${
+                    msg.userId === currentUser.id
+                      ? 'text-white'
+                      : 'text-gray-500'
+                  }`}
+                >
+                  {new Date(msg.timestamp).toLocaleTimeString().slice(0, 5)}
+                </div>
               </div>
-            </div>
-            {msg.messageId === currentUser.id && (
-              <img
-                src={msg.user?.avatar}
-                alt={`${msg.user?.fullName}'s avatar`}
-                className="w-8 h-8 rounded-full ml-2"
-              />
-            )}
-          </li>
-        ))}
+              {msg.userId === currentUser.id && (
+                <img
+                  src={currentUser.avatar}
+                  alt={`${currentUser.fullName}'s avatar`}
+                  className="w-8 h-8 rounded-full ml-2"
+                />
+              )}
+            </li>
+          );
+        })}
       </ul>
+
       <div className="flex-row w-full pb-4 h-18 items-center relative">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -113,8 +142,8 @@ const Chat: React.FC<Props> = ({ users, setMessages, messages }) => {
           />
         </svg>
         <form
-          onSubmit={sendMessage}
-          className="flex items-end gap-1 cursor-pointer"
+          onSubmit={handleSendMessage}
+          className="flex items-end gap-1 cursor-pointer w-full"
         >
           <input
             type="text"
@@ -123,19 +152,6 @@ const Chat: React.FC<Props> = ({ users, setMessages, messages }) => {
             onChange={e => setMessage(e.target.value)}
             placeholder="Type your message..."
           />
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="25"
-            height="30"
-            viewBox="0 0 25 30"
-            fill="none"
-            className="absolute end-[69px] top-1.5 cursor-pointer"
-          >
-            <path
-              d="M17.6862 9.58182L15.8737 7.68054L6.81118 17.1945C6.45426 17.5693 6.17117 18.0144 5.97805 18.5042C5.78493 18.9939 5.68558 19.5188 5.68566 20.0489C5.68575 20.579 5.78526 21.1039 5.97853 21.5936C6.1718 22.0833 6.45504 22.5282 6.81207 22.903C7.1691 23.2778 7.59294 23.575 8.05938 23.7778C8.52582 23.9806 9.02573 24.0849 9.53057 24.0848C10.0354 24.0847 10.5353 23.9802 11.0017 23.7773C11.468 23.5744 11.8918 23.2769 12.2487 22.9021L23.1237 11.485C24.3253 10.2231 25.0002 8.51174 25 6.72736C24.9998 4.94298 24.3246 3.23175 23.1228 1.97012C21.9211 0.708499 20.2912 -0.000175786 18.5918 3.27069e-08C16.8924 0.000175851 15.2627 0.709187 14.0612 1.97106L2.64331 13.9581L2.61831 13.9825C-0.87277 17.6482 -0.87277 23.5883 2.61831 27.2521C6.10939 30.916 11.7665 30.916 15.2576 27.2521L15.2808 27.2259L15.2826 27.2278L23.0773 19.0451L21.2648 17.1438L13.4701 25.3246L13.4469 25.349C12.2507 26.6025 10.6298 27.3065 8.93976 27.3065C7.24975 27.3065 5.62879 26.6025 4.4326 25.349C3.83967 24.725 3.36987 23.9843 3.05012 23.1693C2.73038 22.3544 2.56698 21.4811 2.56931 20.5997C2.57163 19.7183 2.73962 18.846 3.06366 18.0329C3.38769 17.2198 3.86139 16.4818 4.4576 15.8613L4.45581 15.8594L15.8755 3.87234C17.3737 2.29732 19.813 2.29732 21.313 3.87234C22.813 5.44737 22.8112 8.00679 21.313 9.57995L10.438 20.997C10.1946 21.2321 9.87414 21.3593 9.54354 21.3522C9.21293 21.345 8.89775 21.204 8.66381 20.9586C8.42987 20.7132 8.29527 20.3824 8.28813 20.0353C8.28098 19.6881 8.40185 19.3515 8.62547 19.0957L17.688 9.57995L17.6862 9.58182Z"
-              fill="#699BF7"
-            />
-          </svg>
           <button
             type="submit"
             className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 cursor-pointer"

@@ -1,44 +1,103 @@
 /* eslint-disable max-len */
-import React, { useState } from 'react';
+/* eslint-disable max-len */
+import React, { useState, useEffect, SetStateAction, Dispatch } from 'react';
 import { UserType } from '../../types/UserType';
+import { getAllUsers } from '../fetchAPI/fetch';
+import { NavLink } from 'react-router-dom';
 
 interface Props {
+  currentUser: UserType | null;
   users: UserType[];
+  setUsers: Dispatch<SetStateAction<UserType[]>>;
+  setSelectedUser: Dispatch<SetStateAction<UserType | null>>;
+  selectedUser: UserType | null;
 }
 
-export const User: React.FC<Props> = ({ users }) => {
+export const User: React.FC<Props> = ({
+  currentUser,
+  users,
+  setUsers,
+  selectedUser,
+  setSelectedUser,
+}) => {
   const [dropdown, setIsDropdow] = useState(false);
-  const userTwo = users[1];
+
+  // console.log(currentUser);
+
+  // useEffect(() => {
+  //   const socket = new WebSocket('ws://localhost:3005');
+
+  //   socket.onopen = () => {
+  //     if (currentUser) {
+  //       socket.send(JSON.stringify(currentUser));
+  //     }
+  //   };
+
+  //   socket.addEventListener('message', event => {
+  //     console.log('Message from server ', event.data);
+  //   });
+
+  //   socket.onmessage = event => {
+  //     const updatedUsers = JSON.parse(event.data);
+
+  //     console.log('updatedUsers', updatedUsers);
+
+  //     const filteredUsers = updatedUsers.filter(
+  //       (user: { id: string | undefined }) => user.id !== currentUser?.id,
+  //     );
+
+  //     setUsers(filteredUsers);
+  //   };
+
+  //   return () => {
+  //     socket.close();
+  //   };
+  // }, [currentUser]);
+
+  useEffect(() => {
+    getAllUsers().then(setUsers);
+  }, [currentUser, selectedUser]);
 
   const dropdownHandler = () => {
     setIsDropdow(prev => !prev);
   };
 
+  const handleSelectUser = (id: string) => {
+    const selectUser = users.find(item => item.id === id);
+
+    setSelectedUser(selectUser || null);
+    setIsDropdow(false);
+  };
+
   return (
     <section className="w-1/4 p-4 bg-gray-100 flex flex-col items-center">
-      <img
-        src={userTwo.avatar}
-        alt="Profile Avatar"
-        className="w-28 h-28 rounded-full mb-4"
-      />
-      <h2 className="text-lg font-bold">{userTwo.fullName}</h2>
-
-      <div className="flex w-full justify-around mb-4">
-        <button className="w-1/3 p-2 bg-blue-500 text-white rounded-lg hover:opacity-50">
-          Chat
-        </button>
-        <button className="w-1/3 p-2 bg-blue-500 text-white rounded-lg hover:opacity-50">
-          Video Call
-        </button>
-      </div>
+      {selectedUser && (
+        <>
+          <img
+            src={selectedUser?.avatar}
+            alt="Profile Avatar"
+            className="w-28 h-28 rounded-full mb-4"
+          />
+          <h2 className="text-lg font-bold">{selectedUser?.fullName}</h2>
+        </>
+      )}
+      {selectedUser && (
+        <div className="flex w-full justify-around mb-4">
+          <button className="w-1/3 p-2 bg-blue-500 text-white rounded-lg hover:opacity-50">
+            Chat
+          </button>
+          <button className="w-1/3 p-2 bg-blue-500 text-white rounded-lg hover:opacity-50">
+            Video Call
+          </button>
+        </div>
+      )}
 
       <button
         onClick={dropdownHandler}
-        onBlur={dropdownHandler}
         id="dropdownUsersButton"
         data-dropdown-toggle="dropdownUsers"
         data-dropdown-placement="bottom"
-        className="text-white  bg-blue-500 hover:bg-blue-700 focus:bg-blue-700 outline-transpanent font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center"
+        className="text-white bg-blue-500 hover:bg-blue-700 focus:bg-blue-700 outline-transpanent font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center"
         type="button"
       >
         View Friends
@@ -58,7 +117,7 @@ export const User: React.FC<Props> = ({ users }) => {
           />
         </svg>
       </button>
-      {dropdown ? (
+      {dropdown && (
         <div
           id="dropdownUsers"
           className="z-10 bg-white rounded-lg shadow w-60 dark:bg-gray-700 mt-1"
@@ -67,21 +126,24 @@ export const User: React.FC<Props> = ({ users }) => {
             className="h-48 py-2 overflow-y-auto text-gray-700 dark:text-gray-200"
             aria-labelledby="dropdownUsersButton"
           >
-            {users.map(user => (
-              <li key={user.id}>
-                <a
-                  href="#"
-                  className="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-                >
-                  <img
-                    className="w-6 h-6 me-2 rounded-full"
-                    src={user.avatar}
-                    alt="Jese image"
-                  ></img>
-                  {user.fullName}
-                </a>
-              </li>
-            ))}
+            {users.map(
+              user =>
+                user.id !== currentUser?.id && (
+                  <li key={user.id} onClick={() => handleSelectUser(user.id)}>
+                    <NavLink
+                      to={'/chat'}
+                      className="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                    >
+                      <img
+                        className="w-6 h-6 me-2 rounded-full"
+                        src={user.avatar}
+                        alt={`${user.fullName} avatar`}
+                      />
+                      {user.fullName}
+                    </NavLink>
+                  </li>
+                ),
+            )}
           </ul>
           <a
             href="#"
@@ -99,7 +161,7 @@ export const User: React.FC<Props> = ({ users }) => {
             Add new friend
           </a>
         </div>
-      ) : null}
+      )}
     </section>
   );
 };

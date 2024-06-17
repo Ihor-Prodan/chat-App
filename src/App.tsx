@@ -1,80 +1,108 @@
-/* eslint-disable max-len */
-import React from 'react';
+import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import Chat from './components/Chat/Chat';
 import './style.index.css';
-import { Messages } from './components/Mesegges/Mesegges';
 import { User } from './components/User/User';
-// import userFoto from './components/Mesegges/img/user.png';
-// import user2 from './components/Mesegges/img/user2.png';
-// import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import { UserType } from './types/UserType';
-import { useLocalStorage } from './LocalStorege/Local';
 import { Message } from './types/MessageTypes';
+import { ChatType } from './types/ChatType';
+import { io, Socket } from 'socket.io-client';
+import { useLocalStorage } from './LocalStorege/Local';
+import { Messages } from './components/Mesegges/Mesegges';
+// import { getAllMesages } from './components/fetchAPI/fetch';
 
 interface Props {
   users: UserType[];
+  currentUser: UserType | null;
+  setUsers: Dispatch<SetStateAction<UserType[]>>;
 }
 
-// const user = {
-//   firstName: 'David',
-//   lastName: 'Peters',
-//   avatar: userFoto,
-//   position: 'Senior Developer',
-//   id: uuidv4(),
-//   email: 'david@example.com',
-//   status: true,
-//   createdAt: new Date(),
-//   updatedAt: new Date(),
-// };
+export const App: React.FC<Props> = ({ users, currentUser, setUsers }) => {
+  const [selectedUser, setSelectedUser] = useLocalStorage<UserType | null>(
+    'selectUser',
+    null,
+  );
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [chat, setChat] = useState<ChatType>({
+    id: uuidv4(),
+    userOneId: currentUser?.id ?? '',
+    userTwoId: selectedUser?.id ?? '',
+    messages: [],
+  });
 
-// const userTwo = {
-//   firstName: 'Dianne',
-//   lastName: 'Jhonson',
-//   avatar: user2,
-//   position: 'Junior Developer',
-//   id: uuidv4(),
-//   email: 'di@example.com',
-//   status: true,
-//   createdAt: new Date(),
-//   updatedAt: new Date(),
-// };
+  useEffect(() => {
+    const newSocket = io('http://localhost:3005');
 
-// const exampleChat = {
-//   id: user.id && userTwo.id,
-//   participants: [
-//     {
-//       id: uuidv4(),
-//       firstName: 'David',
-//       lastName: 'Peters',
-//       avatar: userFoto,
-//       position: 'Senior Developer',
-//       email: 'david@example.com',
-//       status: true,
-//       createdAt: new Date(),
-//       updatedAt: new Date(),
-//     },
-//     {
-//       firstName: 'Dianne',
-//       lastName: 'Jhonson',
-//       avatar: user2,
-//       position: 'Junior Developer',
-//       id: uuidv4(),
-//       email: 'di@example.com',
-//       status: true,
-//       createdAt: new Date(),
-//       updatedAt: new Date(),
-//     },
-//   ],
-// };
+    setSocket(newSocket);
 
-export const App: React.FC<Props> = ({ users }) => {
-  const [messages, setMessages] = useLocalStorage<Message[]>('users', []);
+    newSocket.on('message', (newMessage: Message) => {
+      setMessages(prevMessages => [...prevMessages, newMessage]);
+
+      // eslint-disable-next-line no-console
+      console.log('isInCurrentChat', newMessage, messages);
+
+      // const isInCurrentChat =
+      //   (newMessage.userId === currentUser?.id &&
+      //     newMessage.userId === selectedUser?.id) ||
+      //   (newMessage.userId === selectedUser?.id &&
+      //     newMessage.userId === currentUser?.id);
+
+      // console.log('isInCurrentChat', isInCurrentChat);
+
+      setChat(prevChat => ({
+        ...prevChat,
+        messages: [...prevChat.messages, newMessage],
+      }));
+    });
+
+    // getAllMesages().then(setMessages);
+
+    return () => {
+      newSocket.disconnect();
+    };
+  }, [currentUser, selectedUser]);
+
+  const handleSendMessage = (message: Message) => {
+    if (socket) {
+      socket.emit('message', JSON.stringify(message));
+
+      const isInCurrentChat =
+        (message.userId === currentUser?.id &&
+          message.userId === selectedUser?.id) ||
+        (message.userId === selectedUser?.id &&
+          message.userId === currentUser?.id);
+
+      if (isInCurrentChat) {
+        setChat(prevChat => ({
+          ...prevChat,
+          messages: [...prevChat.messages, message],
+        }));
+      }
+    }
+  };
 
   return (
     <div className="App flex h-screen">
-      <Messages users={users} messages={messages} />
-      <Chat users={users} setMessages={setMessages} messages={messages} />
-      <User users={users} />
+      <Messages users={users} currentUser={currentUser} chat={chat} />
+      {currentUser && (
+        <Chat
+          users={users}
+          setMessages={setMessages}
+          sendMessage={handleSendMessage}
+          setChat={setChat}
+          chat={chat}
+          currentUser={currentUser}
+          selectedUser={selectedUser}
+        />
+      )}
+      <User
+        users={users}
+        setUsers={setUsers}
+        currentUser={currentUser}
+        setSelectedUser={setSelectedUser}
+        selectedUser={selectedUser}
+      />
     </div>
   );
 };
