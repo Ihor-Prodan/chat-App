@@ -58,6 +58,8 @@ const Chat: React.FC<Props> = ({
     }
   };
 
+  console.log('ch', chat.messages);
+
   return (
     <div className="w-2/4 p-4 bg-white flex flex-col h-screen">
       {selectedUser && (

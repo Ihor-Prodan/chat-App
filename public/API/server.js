@@ -409,6 +409,7 @@ io.on('connection', socket => {
     const newMessage = { messageId, userId, text, timestamp };
 
     try {
+      console.log('text', text);
       await client.query(
         'INSERT INTO messages ("messageId", "userId", "text", "timestamp") VALUES ($1, $2, $3, $4)',
         [

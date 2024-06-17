@@ -9,7 +9,7 @@ import { ChatType } from './types/ChatType';
 import { io, Socket } from 'socket.io-client';
 import { useLocalStorage } from './LocalStorege/Local';
 import { Messages } from './components/Mesegges/Mesegges';
-// import { getAllMesages } from './components/fetchAPI/fetch';
+import { getAllMesages } from './components/fetchAPI/fetch';
 
 interface Props {
   users: UserType[];
@@ -31,32 +31,41 @@ export const App: React.FC<Props> = ({ users, currentUser, setUsers }) => {
     messages: [],
   });
 
+  // eslint-disable-next-line no-console
+  console.log('isInCurrentChat', messages);
+
   useEffect(() => {
     const newSocket = io('http://localhost:3005');
 
     setSocket(newSocket);
 
     newSocket.on('message', (newMessage: Message) => {
-      setMessages(prevMessages => [...prevMessages, newMessage]);
-
-      // eslint-disable-next-line no-console
-      console.log('isInCurrentChat', newMessage, messages);
-
-      // const isInCurrentChat =
-      //   (newMessage.userId === currentUser?.id &&
-      //     newMessage.userId === selectedUser?.id) ||
-      //   (newMessage.userId === selectedUser?.id &&
-      //     newMessage.userId === currentUser?.id);
-
-      // console.log('isInCurrentChat', isInCurrentChat);
-
-      setChat(prevChat => ({
-        ...prevChat,
-        messages: [...prevChat.messages, newMessage],
-      }));
+      if (
+        !chat.messages.some(
+          message => message.messageId === newMessage.messageId,
+        )
+      ) {
+        setMessages(prevMessages => [...prevMessages, newMessage]);
+        setChat(prevChat => ({
+          ...prevChat,
+          messages: [...prevChat.messages, newMessage],
+        }));
+      }
     });
 
-    // getAllMesages().then(setMessages);
+    getAllMesages().then(res => {
+      setMessages(res);
+      const filteredMessages = res.filter(
+        message =>
+          message.userId === chat.userOneId ||
+          message.userId === chat.userTwoId,
+      );
+
+      setChat(prev => ({
+        ...prev,
+        messages: filteredMessages,
+      }));
+    });
 
     return () => {
       newSocket.disconnect();
@@ -74,10 +83,12 @@ export const App: React.FC<Props> = ({ users, currentUser, setUsers }) => {
           message.userId === currentUser?.id);
 
       if (isInCurrentChat) {
-        setChat(prevChat => ({
-          ...prevChat,
-          messages: [...prevChat.messages, message],
-        }));
+        if (!chat.messages.some(msg => msg.messageId === message.messageId)) {
+          setChat(prevChat => ({
+            ...prevChat,
+            messages: [...prevChat.messages, message],
+          }));
+        }
       }
     }
   };
@@ -107,4 +118,4 @@ export const App: React.FC<Props> = ({ users, currentUser, setUsers }) => {
   );
 };
 
-export default App;
+export default React.memo(App);
