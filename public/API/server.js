@@ -9,7 +9,6 @@ const { v4: uuidv4 } = require('uuid');
 const express = require('express');
 const cors = require('cors');
 const { Client } = require('pg');
-// const WebSocket = require('ws');
 const Joi = require('joi');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -55,9 +54,11 @@ client
         "termsAccepted" BOOLEAN DEFAULT false,
         "activationToken" TEXT
       );
+
       CREATE TABLE IF NOT EXISTS messages (
         "messageId" UUID PRIMARY KEY,
         "userId" UUID REFERENCES users(id),
+        "receiverId" UUID REFERENCES users(id),
         "text" TEXT NOT NULL,
         "timestamp" TIMESTAMP NOT NULL
       );
@@ -99,6 +100,7 @@ const loginSchema = Joi.object({
 
 const messageSchema = Joi.object({
   userId: Joi.string(),
+  receiverId: Joi.string(),
   text: Joi.string().required(),
   messageId: Joi.string(),
   timestamp: Joi.date(),
@@ -277,7 +279,6 @@ app.post('/users', async (req, res) => {
   console.log('body', req.body);
   const { error } = userSchema.validate(req.body);
 
-  console.log('1234', error);
   if (error) {
     return res.status(422).send(error.details.message);
   }
@@ -353,31 +354,20 @@ app.get('/messages', async (req, res) => {
   }
 });
 
-app.post('/messages', async (req, res) => {
-  const { error } = messageSchema.validate(req.body);
-
-  if (error) {
-    return res.status(422).send(error.details[0].message);
-  }
-
-  const { userId, text, messageId, timestamp } = req.body;
-
-  // const id = uuidv4();
-  // const timestamp = new Date();
-
-  const message = {
-    messageId,
-    userId,
-    text,
-    timestamp: new Date(timestamp),
-  };
+app.delete('/messages/:messageId', async (req, res) => {
+  const { messageId } = req.params;
 
   try {
-    await client.query(
-      'INSERT INTO messages ("messageId", "userId", "text", "timestamp") VALUES ($1, $2, $3, $4)',
-      [message.messageId, message.userId, message.text, message.timestamp],
+    const result = await client.query(
+      'DELETE FROM messages WHERE "messageId" = $1',
+      [messageId],
     );
-    res.status(201).send(message);
+
+    if (result.rowCount === 0) {
+      return res.status(404).send('Message not found');
+    }
+
+    res.sendStatus(204);
   } catch (err) {
     console.error(err);
     res.status(500).send('Internal Server Error');
@@ -402,21 +392,25 @@ io.on('connection', socket => {
 
   socket.on('message', async message => {
     const parsedMessage = JSON.parse(message);
-    const { userId, text, timestamp } = parsedMessage;
-    // const id = userId;
+    const { userId, text, timestamp, receiverId } = parsedMessage;
     const messageId = uuidv4();
-    // const timestamp = new Date();
-    const newMessage = { messageId, userId, text, timestamp };
+    const newMessage = { messageId, userId, text, timestamp, receiverId };
+
+    const { error } = messageSchema.validate(newMessage);
+
+    if (error) {
+      return res.status(422).send(error.details[0].message);
+    }
 
     try {
-      console.log('text', text);
       await client.query(
-        'INSERT INTO messages ("messageId", "userId", "text", "timestamp") VALUES ($1, $2, $3, $4)',
+        'INSERT INTO messages ("messageId", "userId", "receiverId", "text", "timestamp") VALUES ($1, $2, $3, $4, $5)',
         [
           newMessage.messageId,
           newMessage.userId,
+          newMessage.receiverId,
           newMessage.text,
-          newMessage.timestamp,
+          new Date(newMessage.timestamp),
         ],
       );
       io.emit('message', newMessage);

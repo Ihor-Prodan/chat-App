@@ -31,9 +31,6 @@ export const App: React.FC<Props> = ({ users, currentUser, setUsers }) => {
     messages: [],
   });
 
-  // eslint-disable-next-line no-console
-  console.log('isInCurrentChat', messages);
-
   useEffect(() => {
     const newSocket = io('http://localhost:3005');
 
@@ -41,15 +38,20 @@ export const App: React.FC<Props> = ({ users, currentUser, setUsers }) => {
 
     newSocket.on('message', (newMessage: Message) => {
       if (
-        !chat.messages.some(
-          message => message.messageId === newMessage.messageId,
-        )
+        !messages.some(message => message.messageId === newMessage.messageId)
       ) {
-        setMessages(prevMessages => [...prevMessages, newMessage]);
-        setChat(prevChat => ({
-          ...prevChat,
-          messages: [...prevChat.messages, newMessage],
-        }));
+        setMessages(prev => [...prev, newMessage]);
+        if (
+          (newMessage.userId === currentUser?.id &&
+            newMessage.receiverId === selectedUser?.id) ||
+          (newMessage.userId === selectedUser?.id &&
+            newMessage.receiverId === currentUser?.id)
+        ) {
+          setChat(prevChat => ({
+            ...prevChat,
+            messages: [...prevChat.messages, newMessage],
+          }));
+        }
       }
     });
 
@@ -57,8 +59,10 @@ export const App: React.FC<Props> = ({ users, currentUser, setUsers }) => {
       setMessages(res);
       const filteredMessages = res.filter(
         message =>
-          message.userId === chat.userOneId ||
-          message.userId === chat.userTwoId,
+          (message.userId === currentUser?.id &&
+            message.receiverId === selectedUser?.id) ||
+          (message.userId === selectedUser?.id &&
+            message.receiverId === currentUser?.id),
       );
 
       setChat(prev => ({
@@ -75,33 +79,17 @@ export const App: React.FC<Props> = ({ users, currentUser, setUsers }) => {
   const handleSendMessage = (message: Message) => {
     if (socket) {
       socket.emit('message', JSON.stringify(message));
-
-      const isInCurrentChat =
-        (message.userId === currentUser?.id &&
-          message.userId === selectedUser?.id) ||
-        (message.userId === selectedUser?.id &&
-          message.userId === currentUser?.id);
-
-      if (isInCurrentChat) {
-        if (!chat.messages.some(msg => msg.messageId === message.messageId)) {
-          setChat(prevChat => ({
-            ...prevChat,
-            messages: [...prevChat.messages, message],
-          }));
-        }
-      }
     }
   };
 
   return (
     <div className="App flex h-screen">
-      <Messages users={users} currentUser={currentUser} chat={chat} />
-      {currentUser && (
+      <Messages users={users} currentUser={currentUser} messages={messages} />
+      {currentUser && selectedUser && (
         <Chat
-          users={users}
           setMessages={setMessages}
+          users={users}
           sendMessage={handleSendMessage}
-          setChat={setChat}
           chat={chat}
           currentUser={currentUser}
           selectedUser={selectedUser}
@@ -118,4 +106,4 @@ export const App: React.FC<Props> = ({ users, currentUser, setUsers }) => {
   );
 };
 
-export default React.memo(App);
+export default App;

@@ -24,7 +24,7 @@ export async function removeUser(userId: string): Promise<string> {
   return response.statusText;
 }
 
-export async function removeMessages(messageId: string): Promise<string> {
+export async function deleteMessage(messageId: string): Promise<string> {
   const response = await axios.delete(`/messages/${messageId}`);
 
   return response.statusText;
@@ -52,6 +52,7 @@ export async function addNewUser(newUser: {
 export async function addNewMessage(newMessage: {
   messageId: string;
   userId: string;
+  receiverId: string;
   text: string;
   timestamp: number;
 }): Promise<Message> {

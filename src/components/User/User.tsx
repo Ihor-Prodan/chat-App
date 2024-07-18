@@ -22,38 +22,6 @@ export const User: React.FC<Props> = ({
 }) => {
   const [dropdown, setIsDropdow] = useState(false);
 
-  // console.log(currentUser);
-
-  // useEffect(() => {
-  //   const socket = new WebSocket('ws://localhost:3005');
-
-  //   socket.onopen = () => {
-  //     if (currentUser) {
-  //       socket.send(JSON.stringify(currentUser));
-  //     }
-  //   };
-
-  //   socket.addEventListener('message', event => {
-  //     console.log('Message from server ', event.data);
-  //   });
-
-  //   socket.onmessage = event => {
-  //     const updatedUsers = JSON.parse(event.data);
-
-  //     console.log('updatedUsers', updatedUsers);
-
-  //     const filteredUsers = updatedUsers.filter(
-  //       (user: { id: string | undefined }) => user.id !== currentUser?.id,
-  //     );
-
-  //     setUsers(filteredUsers);
-  //   };
-
-  //   return () => {
-  //     socket.close();
-  //   };
-  // }, [currentUser]);
-
   useEffect(() => {
     getAllUsers().then(setUsers);
   }, [currentUser, selectedUser]);

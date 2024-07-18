@@ -4,20 +4,23 @@
 import React from 'react';
 import { UserType } from '../../types/UserType';
 import { Message } from '../../types/MessageTypes';
-import { ChatType } from '../../types/ChatType';
 
 interface UserProps {
   users: UserType[];
   currentUser: UserType | null;
-  chat: ChatType;
+  messages: Message[];
 }
 
-export const Messages: React.FC<UserProps> = ({ users, currentUser, chat }) => {
-  const maxMessageLength = 35;
+export const Messages: React.FC<UserProps> = ({
+  users,
+  currentUser,
+  messages,
+}) => {
+  const maxMessageLength = 25;
 
-  const userMessages = chat.messages.reduce(
+  const userMessages = messages.reduce(
     (acc, message) => {
-      if (message.userId && message.userId !== currentUser?.id) {
+      if (message.receiverId === currentUser?.id) {
         if (!acc[message.userId]) {
           // eslint-disable-next-line no-param-reassign
           acc[message.userId] = [];
@@ -42,6 +45,8 @@ export const Messages: React.FC<UserProps> = ({ users, currentUser, chat }) => {
       timestamp: userMessagesArray[userMessagesArray.length - 1].timestamp,
     };
   });
+
+  userMessageList.sort((a, b) => a.timestamp - b.timestamp);
 
   return (
     <section className="w-1/4 p-4 bg-gray-100">
@@ -132,3 +137,5 @@ export const Messages: React.FC<UserProps> = ({ users, currentUser, chat }) => {
     </section>
   );
 };
+
+export default Messages;

@@ -81,12 +81,6 @@ export const SignUp: React.FC<Props> = ({ setUsers }) => {
 
       setUsers(prevUsers => [...prevUsers, addedUser]);
 
-      // setFirstName('');
-      // setLastName('');
-      // setPassword('');
-      // setConfirmPassword('');
-      // setEmail('');
-      // setPhoneNumber('');
       setTermsAccepted(false);
 
       navigate('/chat');

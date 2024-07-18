@@ -12,6 +12,7 @@ export const Login: React.FC<Props> = ({ setCurrentUser }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
+  const [error, setError] = useState<string>('');
 
   const navigate = useNavigate();
 
@@ -27,8 +28,17 @@ export const Login: React.FC<Props> = ({ setCurrentUser }) => {
 
       localStorage.setItem('activationToken', activationToken);
       setCurrentUser(user);
-      navigate('/chat');
-    } catch (err) {}
+
+      if (activationToken) {
+        navigate('/chat');
+      } else {
+        setError(
+          'Authentication failed. Please check your email and password.',
+        );
+      }
+    } catch (err) {
+      setError('Authentication failed. Please check your email and password.');
+    }
   };
 
   return (
@@ -64,6 +74,7 @@ export const Login: React.FC<Props> = ({ setCurrentUser }) => {
               👁️
             </button>
           </div>
+          {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
           <div className="flex items-center justify-between mb-4">
             <label className="inline-flex items-center">
               <input type="checkbox" className="form-checkbox text-blue-500" />

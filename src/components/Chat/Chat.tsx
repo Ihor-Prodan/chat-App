@@ -3,32 +3,34 @@
 /* eslint-disable max-len */
 /* eslint-disable no-console */
 /* eslint-disable max-len */
+/* eslint-disable no-console */
+/* eslint-disable max-len */
 import React, { useState, FormEvent, Dispatch, SetStateAction } from 'react';
 import { UserType } from '../../types/UserType';
 import { Message } from '../../types/MessageTypes';
 import { ChatType } from '../../types/ChatType';
-import { addNewMessage } from '../fetchAPI/fetch';
 import { v4 as uuidv4 } from 'uuid';
+import deleteMessageIcon from './img/avd0879fcbf810d38dc8e.png';
+import { deleteMessage } from '../fetchAPI/fetch';
 
 interface Props {
   users: UserType[];
-  setMessages: Dispatch<SetStateAction<Message[]>>;
   sendMessage: (message: Message) => void;
-  setChat: Dispatch<React.SetStateAction<ChatType>>;
   chat: ChatType;
   currentUser: UserType;
   selectedUser: UserType | null;
+  setMessages: Dispatch<SetStateAction<Message[]>>;
 }
 
 const Chat: React.FC<Props> = ({
-  setMessages,
   sendMessage,
   chat,
-  setChat,
   currentUser,
   selectedUser,
+  setMessages,
 }) => {
   const [message, setMessage] = useState<string>('');
+  const [visibleMessageId, setVisibleMessageId] = useState<string | null>(null);
 
   const handleSendMessage = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -37,28 +39,76 @@ const Chat: React.FC<Props> = ({
       const newMessage: Message = {
         messageId: uuidv4(),
         userId: currentUser.id,
+        receiverId: selectedUser.id,
         text: message,
         timestamp: Date.now(),
       };
 
       try {
-        const savedMessage = await addNewMessage(newMessage);
-
-        setMessages(prevMessages => [savedMessage, ...prevMessages]);
-        sendMessage(savedMessage);
+        sendMessage(newMessage);
         setMessage('');
-
-        setChat(prevChat => ({
-          ...prevChat,
-          messages: [savedMessage, ...prevChat.messages],
-        }));
       } catch (error) {
         console.error('Error sending message:', error);
       }
     }
   };
 
-  console.log('ch', chat.messages);
+  const formatDate = (timestamp: number) => {
+    const date = new Date(timestamp);
+
+    return date.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  const isToday = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const today = new Date();
+
+    return (
+      date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear()
+    );
+  };
+
+  const filteredMessages = chat.messages.filter(
+    msg =>
+      (msg.userId === currentUser.id && msg.receiverId === selectedUser?.id) ||
+      (msg.userId === selectedUser?.id && msg.receiverId === currentUser.id),
+  );
+
+  const sortedMessages = filteredMessages.sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+  );
+
+  let lastMessageDate: string | null = null;
+
+  const handleMouseEnter = (id: string) => {
+    setVisibleMessageId(id);
+  };
+
+  const handleMouseLeave = () => {
+    setVisibleMessageId(null);
+  };
+
+  const handleDeleteMessage = async (id: string) => {
+    try {
+      const status = await deleteMessage(id);
+
+      if (status === 'OK') {
+        setMessages(prevMessages =>
+          prevMessages.filter(msg => msg.messageId !== id),
+        );
+      } else {
+        console.error('Failed to delete message');
+      }
+    } catch (error) {
+      console.error('Error deleting message:', error);
+    }
+  };
 
   return (
     <div className="w-2/4 p-4 bg-white flex flex-col h-screen">
@@ -77,52 +127,76 @@ const Chat: React.FC<Props> = ({
       )}
 
       <ul className="h-96 overflow-y-auto mb-4 flex-grow flex flex-col-reverse">
-        {chat.messages.map((msg, index) => {
-          const messageUser =
-            msg.userId === currentUser.id ? currentUser : selectedUser;
+        {selectedUser &&
+          sortedMessages.reverse().map(msg => {
+            const messageUser =
+              msg.userId === currentUser.id ? currentUser : selectedUser;
+            const messageDate = formatDate(msg.timestamp);
+            const showDate =
+              messageDate !== lastMessageDate && !isToday(msg.timestamp);
 
-          return (
-            <li
-              key={index}
-              className={`flex mb-2 items-center ${
-                msg.userId === currentUser.id ? 'justify-end' : 'justify-start'
-              }`}
-            >
-              {msg.userId !== currentUser.id && messageUser && (
-                <img
-                  src={messageUser.avatar}
-                  alt={`${messageUser.fullName}'s avatar`}
-                  className="w-8 h-8 rounded-full mr-2"
-                />
-              )}
-              <div
-                className={`p-2 rounded-lg max-w-xs ${
-                  msg.userId === currentUser.id
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 text-black'
-                }`}
-              >
-                {msg.text}
-                <div
-                  className={`text-xs text-right text-wrap ${
+            lastMessageDate = messageDate;
+
+            return (
+              <React.Fragment key={msg.messageId}>
+                {showDate && (
+                  <li className="text-center my-4 text-gray-500">
+                    {messageDate}
+                  </li>
+                )}
+                <li
+                  className={`flex mb-2 items-center ${
                     msg.userId === currentUser.id
-                      ? 'text-white'
-                      : 'text-gray-500'
+                      ? 'justify-end'
+                      : 'justify-start'
                   }`}
                 >
-                  {new Date(msg.timestamp).toLocaleTimeString().slice(0, 5)}
-                </div>
-              </div>
-              {msg.userId === currentUser.id && (
-                <img
-                  src={currentUser.avatar}
-                  alt={`${currentUser.fullName}'s avatar`}
-                  className="w-8 h-8 rounded-full ml-2"
-                />
-              )}
-            </li>
-          );
-        })}
+                  {msg.userId !== currentUser.id && messageUser && (
+                    <img
+                      src={messageUser.avatar}
+                      alt={`${messageUser.fullName}'s avatar`}
+                      className="w-8 h-8 rounded-full mr-2"
+                    />
+                  )}
+                  <div
+                    onMouseEnter={() => handleMouseEnter(msg.messageId)}
+                    onMouseLeave={handleMouseLeave}
+                    className={`p-2 rounded-lg max-w-xs ${
+                      msg.userId === currentUser.id
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-200 text-black'
+                    }`}
+                  >
+                    {msg.text}
+                    <div
+                      className={`text-xs text-right text-wrap flex justify-between items-center ${
+                        msg.userId === currentUser.id
+                          ? 'text-white'
+                          : 'text-gray-500'
+                      }`}
+                    >
+                      {new Date(msg.timestamp).toLocaleTimeString().slice(0, 5)}
+                      {visibleMessageId === msg.messageId && (
+                        <img
+                          onClick={() => handleDeleteMessage(msg.messageId)}
+                          className="w-4 h-4 delete-icon gap-2"
+                          src={deleteMessageIcon}
+                          alt="Delete Message"
+                        />
+                      )}
+                    </div>
+                  </div>
+                  {msg.userId === currentUser.id && (
+                    <img
+                      src={currentUser.avatar}
+                      alt={`${currentUser.fullName}'s avatar`}
+                      className="w-8 h-8 rounded-full ml-2"
+                    />
+                  )}
+                </li>
+              </React.Fragment>
+            );
+          })}
       </ul>
 
       <div className="flex-row w-full pb-4 h-18 items-center relative">
