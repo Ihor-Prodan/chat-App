@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/indent */
 import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import Chat from './components/Chat/Chat';
 import './style.index.css';
@@ -30,6 +31,9 @@ export const App: React.FC<Props> = ({ users, currentUser, setUsers }) => {
     userTwoId: selectedUser?.id ?? '',
     messages: [],
   });
+  const [messageCounters, setMessageCounters] = useLocalStorage<
+    Record<string, number>
+  >('messageCounters', {});
 
   useEffect(() => {
     const newSocket = io('http://localhost:3005');
@@ -41,6 +45,19 @@ export const App: React.FC<Props> = ({ users, currentUser, setUsers }) => {
         !messages.some(message => message.messageId === newMessage.messageId)
       ) {
         setMessages(prev => [...prev, newMessage]);
+
+        if (
+          (newMessage.userId !== currentUser?.id &&
+            newMessage.receiverId === currentUser?.id) ||
+          (newMessage.userId === selectedUser?.id &&
+            newMessage.receiverId === currentUser?.id)
+        ) {
+          setMessageCounters(prevCounters => ({
+            ...prevCounters,
+            [newMessage.userId]: (prevCounters[newMessage.userId] || 0) + 1,
+          }));
+        }
+
         if (
           (newMessage.userId === currentUser?.id &&
             newMessage.receiverId === selectedUser?.id) ||
@@ -74,7 +91,7 @@ export const App: React.FC<Props> = ({ users, currentUser, setUsers }) => {
     return () => {
       newSocket.disconnect();
     };
-  }, [currentUser, selectedUser]);
+  }, [currentUser, selectedUser, messageCounters]);
 
   const handleSendMessage = (message: Message) => {
     if (socket) {
@@ -84,7 +101,14 @@ export const App: React.FC<Props> = ({ users, currentUser, setUsers }) => {
 
   return (
     <div className="App flex h-screen">
-      <Messages users={users} currentUser={currentUser} messages={messages} />
+      <Messages
+        users={users}
+        currentUser={currentUser}
+        messages={messages}
+        setSelectedUser={setSelectedUser}
+        messageCounters={messageCounters}
+        setMessageCounters={setMessageCounters}
+      />
       {currentUser && selectedUser && (
         <Chat
           setMessages={setMessages}
@@ -101,6 +125,7 @@ export const App: React.FC<Props> = ({ users, currentUser, setUsers }) => {
         currentUser={currentUser}
         setSelectedUser={setSelectedUser}
         selectedUser={selectedUser}
+        setMessageCounters={setMessageCounters}
       />
     </div>
   );

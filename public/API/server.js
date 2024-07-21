@@ -178,7 +178,7 @@ app.post('/login', async (req, res) => {
   const { error } = loginSchema.validate(req.body);
 
   if (error) {
-    return res.status(422).send(error.details.message);
+    return res.status(422).send(error.details[0].message);
   }
 
   const { email, password } = req.body;
@@ -202,6 +202,11 @@ app.post('/login', async (req, res) => {
     const activationToken = jwt.sign({ email }, JWT_SECRET, {
       expiresIn: '1d',
     });
+
+    await client.query('UPDATE users SET status = $1 WHERE email = $2', [
+      true,
+      email,
+    ]);
 
     res.status(200).send({ user, activationToken });
   } catch (err) {

@@ -11,6 +11,7 @@ interface Props {
   setUsers: Dispatch<SetStateAction<UserType[]>>;
   setSelectedUser: Dispatch<SetStateAction<UserType | null>>;
   selectedUser: UserType | null;
+  setMessageCounters: Dispatch<SetStateAction<Record<string, number>>>;
 }
 
 export const User: React.FC<Props> = ({
@@ -19,6 +20,7 @@ export const User: React.FC<Props> = ({
   setUsers,
   selectedUser,
   setSelectedUser,
+  setMessageCounters,
 }) => {
   const [dropdown, setIsDropdow] = useState(false);
 
@@ -32,6 +34,12 @@ export const User: React.FC<Props> = ({
 
   const handleSelectUser = (id: string) => {
     const selectUser = users.find(item => item.id === id);
+
+    setMessageCounters((prevCounters: any) => {
+      const newCounters = { ...prevCounters, [id]: 0 };
+
+      return newCounters;
+    });
 
     setSelectedUser(selectUser || null);
     setIsDropdow(false);

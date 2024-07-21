@@ -121,7 +121,9 @@ const Chat: React.FC<Props> = ({
           />
           <div className="ml-2">
             <h2 className="text-lg font-bold">{selectedUser.fullName}</h2>
-            <p className="text-sm text-green-500">Online</p>
+            {selectedUser.status && (
+              <p className="text-sm text-green-500">Online</p>
+            )}
           </div>
         </div>
       )}
