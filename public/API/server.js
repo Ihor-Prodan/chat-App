@@ -1,3 +1,5 @@
+/* eslint-disable import/extensions */
+/* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-var-requires */
 /* eslint-disable max-len */
 /* eslint-disable no-console */
@@ -5,16 +7,19 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 /* eslint-disable max-len */
 /* eslint-disable no-console */
-const { v4: uuidv4 } = require('uuid');
-const express = require('express');
-const cors = require('cors');
-const { Client } = require('pg');
-const Joi = require('joi');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
+import { v4 as uuidv4 } from 'uuid';
+import express from 'express';
+import cors from 'cors';
+import pg from 'pg';
+import Joi from 'joi';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { Server as SocketIOServer } from 'socket.io';
 
 const app = express();
 const PORT = 3005;
+
+const { Client } = pg;
 
 const JWT_SECRET = 'mySecret';
 
@@ -383,7 +388,7 @@ const server = app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
 
-const io = require('socket.io')(server, {
+const io = new SocketIOServer(server, {
   cors: {
     origin: '*',
     methods: ['GET', 'POST'],
@@ -428,3 +433,45 @@ io.on('connection', socket => {
     console.log('Client disconnected');
   });
 });
+
+// import { Server } from 'socket.io';
+// import app from './app.js';
+// import { v4 as uuidv4 } from 'uuid';
+// import { createMessage } from './Models/messageModels.js';
+
+// const PORT = 3005;
+
+// const server = app.listen(PORT, () => {
+//   console.log(`Server is running on port ${PORT}`);
+// });
+
+// const io = new Server(server, {
+//   cors: {
+//     origin: '*',
+//     methods: ['GET', 'POST'],
+//     allowedHeaders: ['Content-Type', 'Authorization'],
+//     credentials: true,
+//   },
+// });
+
+// io.on('connection', socket => {
+//   console.log('New client connected');
+
+//   socket.on('message', async message => {
+//     const parsedMessage = JSON.parse(message);
+//     const { userId, text, timestamp, receiverId } = parsedMessage;
+//     const messageId = uuidv4();
+//     const newMessage = { messageId, userId, text, timestamp, receiverId };
+
+//     try {
+//       await createMessage(newMessage);
+//       io.emit('message', newMessage);
+//     } catch (err) {
+//       console.error('Error inserting message', err);
+//     }
+//   });
+
+//   socket.on('disconnect', () => {
+//     console.log('Client disconnected');
+//   });
+// });

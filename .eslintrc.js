@@ -21,7 +21,8 @@ module.exports = {
     project: [
       "./tsconfig.json",
       "./public/API/tsconfig.server.json",
-      "./tsconfig.models.json"
+      "./tsconfig.Models.json",
+      "./tsconfig.eslint.json"
     ],
   },
   ignorePatterns: ['tailwind.config.js', 'postcss.config.js', '.eslintrc.js'],
