@@ -12,7 +12,7 @@ export function getAllMesages(): Promise<Message[]> {
   return axios.get('/messages').then((res: { data: Message[] }) => res.data);
 }
 
-export async function getOneUser(userId: string): Promise<UserType[]> {
+export async function getOneUser(userId: string): Promise<UserType> {
   const response = await axios.get(`/users/${userId}`);
 
   return response.data;
@@ -27,7 +27,7 @@ export async function removeUser(userId: string): Promise<string> {
 export async function deleteMessage(messageId: string): Promise<string> {
   const response = await axios.delete(`/messages/${messageId}`);
 
-  return response.statusText;
+  return response.status.toString();
 }
 
 export async function addNewUser(newUser: {
@@ -63,7 +63,6 @@ export async function addNewMessage(newMessage: {
 
 export async function updateUser(user: UserType): Promise<UserType> {
   const { firstName, lastName, avatar, id } = user;
-
   const response = await axios.put(`/users/${id}`, {
     firstName,
     lastName,
@@ -93,7 +92,6 @@ export const loginUser = async (email: string, password: string) => {
 
 export async function updateMessage(message: Message): Promise<Message> {
   const { messageId, text, timestamp } = message;
-
   const response = await axios.put(`/messages/${messageId}`, {
     text,
     timestamp,

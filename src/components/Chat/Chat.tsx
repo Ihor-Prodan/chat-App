@@ -1,11 +1,12 @@
 /* eslint-disable no-console */
 /* eslint-disable max-len */
-/* eslint-disable max-len */
-/* eslint-disable no-console */
-/* eslint-disable max-len */
-/* eslint-disable no-console */
-/* eslint-disable max-len */
-import React, { useState, FormEvent, Dispatch, SetStateAction } from 'react';
+import React, {
+  useState,
+  FormEvent,
+  Dispatch,
+  SetStateAction,
+  useEffect,
+} from 'react';
 import { UserType } from '../../types/UserType';
 import { Message } from '../../types/MessageTypes';
 import { ChatType } from '../../types/ChatType';
@@ -31,6 +32,32 @@ const Chat: React.FC<Props> = ({
 }) => {
   const [message, setMessage] = useState<string>('');
   const [visibleMessageId, setVisibleMessageId] = useState<string | null>(null);
+  const [messageIdToDelete, setMessageIdToDelete] = useState<string | null>(
+    null,
+  );
+
+  useEffect(() => {
+    const handleDeleteMessage = async (id: string) => {
+      try {
+        const status = await deleteMessage(id);
+
+        if (status === '204') {
+          setMessages(prevMessages =>
+            prevMessages.filter(msg => msg.messageId !== id),
+          );
+        } else {
+          console.error('Failed to delete message');
+        }
+      } catch (error) {
+        console.error('Error deleting message:', error);
+      }
+    };
+
+    if (messageIdToDelete) {
+      handleDeleteMessage(messageIdToDelete);
+      setMessageIdToDelete(null);
+    }
+  }, [messageIdToDelete, setMessages]);
 
   const handleSendMessage = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -94,20 +121,8 @@ const Chat: React.FC<Props> = ({
     setVisibleMessageId(null);
   };
 
-  const handleDeleteMessage = async (id: string) => {
-    try {
-      const status = await deleteMessage(id);
-
-      if (status === 'OK') {
-        setMessages(prevMessages =>
-          prevMessages.filter(msg => msg.messageId !== id),
-        );
-      } else {
-        console.error('Failed to delete message');
-      }
-    } catch (error) {
-      console.error('Error deleting message:', error);
-    }
+  const handleDeleteMessageClick = (id: string) => {
+    setMessageIdToDelete(id);
   };
 
   return (
@@ -180,7 +195,9 @@ const Chat: React.FC<Props> = ({
                       {new Date(msg.timestamp).toLocaleTimeString().slice(0, 5)}
                       {visibleMessageId === msg.messageId && (
                         <img
-                          onClick={() => handleDeleteMessage(msg.messageId)}
+                          onClick={() =>
+                            handleDeleteMessageClick(msg.messageId)
+                          }
                           className="w-4 h-4 delete-icon gap-2"
                           src={deleteMessageIcon}
                           alt="Delete Message"
