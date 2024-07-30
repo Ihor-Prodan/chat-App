@@ -25,6 +25,6 @@ module.exports = {
       "./tsconfig.eslint.json"
     ],
   },
-  ignorePatterns: ['tailwind.config.js', 'postcss.config.js', '.eslintrc.js'],
+  ignorePatterns: ['tailwind.config.js', 'postcss.config.js', '.eslintrc.cjs'],
 };
 

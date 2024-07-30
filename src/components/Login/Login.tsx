@@ -32,9 +32,7 @@ export const Login: React.FC<Props> = ({ setCurrentUser }) => {
       if (activationToken) {
         navigate('/chat');
       } else {
-        setError(
-          'Authentication failed. Please check your email and password.',
-        );
+        setError('Authentication failed.');
       }
     } catch (err) {
       setError('Authentication failed. Please check your email and password.');
@@ -70,9 +68,7 @@ export const Login: React.FC<Props> = ({ setCurrentUser }) => {
               type="button"
               onClick={togglePasswordVisibility}
               className="absolute right-3 top-3"
-            >
-              👁️
-            </button>
+            ></button>
           </div>
           {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
           <div className="flex items-center justify-between mb-4">
