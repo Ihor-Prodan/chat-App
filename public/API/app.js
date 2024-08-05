@@ -5,8 +5,11 @@ import cors from 'cors';
 import pg from 'pg';
 import userRouter from './Routs/userRoutes.js';
 import messageRouter from './Routs/messageRoutes.js';
+import dotenv from 'dotenv';
 
 const app = express();
+
+dotenv.config();
 
 const { Client } = pg;
 
@@ -17,10 +20,10 @@ app.use('/api/users', userRouter);
 app.use('/api/messages', messageRouter);
 
 const client = new Client({
-  host: 'localhost',
-  user: 'postgres',
-  password: '123412341234',
-  database: 'postgres',
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DATABASE,
 });
 
 client
