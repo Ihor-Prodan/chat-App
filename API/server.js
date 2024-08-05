@@ -2,11 +2,7 @@
 /* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-var-requires */
 /* eslint-disable max-len */
-/* eslint-disable no-console */
-// eslint-disable-next-line import/no-extraneous-dependencies, @typescript-eslint/no-var-requires
-/* eslint-disable @typescript-eslint/no-var-requires */
-/* eslint-disable max-len */
-/* eslint-disable no-console */
+// eslint-disable-next-line import/no-extraneous-dependencies,
 import { v4 as uuidv4 } from 'uuid';
 import express from 'express';
 import cors from 'cors';
@@ -15,9 +11,12 @@ import Joi from 'joi';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { Server as SocketIOServer } from 'socket.io';
+import dotenv from 'dotenv';
 
 const app = express();
 const PORT = 3005;
+
+dotenv.config();
 
 const { Client } = pg;
 
@@ -32,10 +31,10 @@ function verifyToken(token) {
 }
 
 const client = new Client({
-  host: 'localhost',
-  user: 'postgres',
-  password: '123412341234',
-  database: 'postgres',
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DATABASE,
 });
 
 client
